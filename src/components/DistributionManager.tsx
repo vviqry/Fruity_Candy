@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DistributionItem } from '../types';
 import { MapPin, Plus, Trash2, Calendar, Map, AlertCircle, ShoppingBag, Layers, Check } from 'lucide-react';
+import { formatDateIndo } from '../utils/dateFormatter';
 
 interface DistributionManagerProps {
   items: DistributionItem[];
@@ -379,7 +380,7 @@ export default function DistributionManager({
                               >
                                 {deliveries.map((delivery, idx) => (
                                   <option key={`${delivery.date}-${idx}`} value={delivery.date}>
-                                    {delivery.date} {idx === 0 ? '(Terbaru)' : ''}
+                                    {formatDateIndo(delivery.date)} {idx === 0 ? '(Terbaru)' : ''}
                                   </option>
                                 ))}
                               </select>

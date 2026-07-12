@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SupplyItem } from '../types';
 import { Plus, Trash2, Tag, Calendar, DollarSign, Package, AlertCircle } from 'lucide-react';
+import { formatDateIndo } from '../utils/dateFormatter';
 
 interface SupplyManagerProps {
   items: SupplyItem[];
@@ -257,7 +258,7 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
                         </span>
                       </td>
                       <td className="p-4 font-semibold text-slate-700">{formatIDR(item.price)}</td>
-                      <td className="p-4 text-slate-500 font-mono text-xs">{item.entryDate}</td>
+                      <td className="p-4 text-slate-500 font-mono text-xs">{formatDateIndo(item.entryDate)}</td>
                       <td className="p-4 text-center">
                         <button
                           onClick={() => {
@@ -292,7 +293,7 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
                         <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-lg">
-                          {day.date}
+                          {formatDateIndo(day.date)}
                         </span>
                         <span className="text-[11px] text-slate-400 font-medium">({day.itemCount} Item)</span>
                       </div>
