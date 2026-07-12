@@ -52,18 +52,19 @@ export default function App() {
         {
           id: 'dist-1',
           locationName: 'Gudang Cabang Sleman',
-          jarQuantity: 45,
-          jarType: 'Toples Kaca Bulat 500ml',
           mapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12656.326262100806!2d110.3705!3d-7.7201!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a591e1383cd81%3A0xe5433cd637ecdc33!2sSleman%2C%20Sleman%20Regency%2C%20Special%20Region%20of%20Yogyakarta!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>',
-          historyDates: ['2026-07-11', '2026-07-09'],
+          deliveries: [
+            { date: '2026-07-11', jarQuantity: 45, jarType: 'Manco Crunch' },
+            { date: '2026-07-09', jarQuantity: 20, jarType: 'Fruity Candy' }
+          ],
         },
         {
           id: 'dist-2',
           locationName: 'Agen Retail Bantul',
-          jarQuantity: 30,
-          jarType: 'Toples Plastik Kedap Udara 1L',
           mapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12653.250495111166!2d110.3308!3d-7.8903!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a57a164bba467%3A0x4027a7649211aa0!2sBantul%2C%20Bantul%20Regency%2C%20Special%20Region%20of%20Yogyakarta!5e0!3m2!1sen!2sid!4v1700000000001!5m2!1sen!2sid" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>',
-          historyDates: ['2026-07-10'],
+          deliveries: [
+            { date: '2026-07-10', jarQuantity: 30, jarType: 'Fruity Candy' }
+          ],
         },
       ];
       setDistributionItems(seedDistribution);
@@ -119,30 +120,54 @@ export default function App() {
     );
 
     if (existingIndex > -1) {
-      // If location exists, update current details and prepend date to history (if not duplicate)
+      // If location exists, update deliveries list. Map embed code and location name are kept permanent.
       const updatedList = [...distributionItems];
       const target = updatedList[existingIndex];
       
-      const updatedHistory = [dist.entryDate, ...target.historyDates.filter(d => d !== dist.entryDate)];
+      const existingDeliveryIndex = target.deliveries.findIndex(d => d.date === dist.entryDate);
+      let updatedDeliveries = [...target.deliveries];
+      
+      if (existingDeliveryIndex > -1) {
+        // If there is already a delivery on this exact date, replace it or update its values
+        updatedDeliveries[existingDeliveryIndex] = {
+          date: dist.entryDate,
+          jarQuantity: dist.jarQuantity,
+          jarType: dist.jarType,
+        };
+      } else {
+        // Otherwise prepend new delivery
+        updatedDeliveries = [
+          {
+            date: dist.entryDate,
+            jarQuantity: dist.jarQuantity,
+            jarType: dist.jarType,
+          },
+          ...target.deliveries,
+        ];
+      }
+
+      // Sort deliveries by date descending so the newest is always first
+      updatedDeliveries.sort((a, b) => b.date.localeCompare(a.date));
       
       updatedList[existingIndex] = {
         ...target,
-        jarQuantity: dist.jarQuantity,
-        jarType: dist.jarType,
-        mapEmbedCode: dist.mapEmbedCode,
-        historyDates: updatedHistory,
+        deliveries: updatedDeliveries,
       };
       
       saveDistribution(updatedList);
     } else {
-      // Create new distribution point
+      // Create new distribution point with its first delivery record
       const newDistItem: DistributionItem = {
         id: `dist-${Date.now()}`,
         locationName: dist.locationName,
-        jarQuantity: dist.jarQuantity,
-        jarType: dist.jarType,
         mapEmbedCode: dist.mapEmbedCode,
-        historyDates: [dist.entryDate],
+        deliveries: [
+          {
+            date: dist.entryDate,
+            jarQuantity: dist.jarQuantity,
+            jarType: dist.jarType,
+          }
+        ],
       };
       saveDistribution([newDistItem, ...distributionItems]);
     }
@@ -187,19 +212,10 @@ export default function App() {
 
           {/* Connection Status Badge */}
           <div className="flex items-center space-x-2">
-            {online ? (
-              <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-100">
-                <Wifi className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Online (Sheets Sinkron)</span>
-                <span className="sm:hidden">Online</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-amber-100">
-                <WifiOff className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Offline Mode (Local)</span>
-                <span className="sm:hidden">Offline</span>
-              </span>
-            )}
+            <span className="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-100">
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Penyimpanan Lokal Aktif (100% Aman)</span>
+            </span>
           </div>
         </div>
       </header>

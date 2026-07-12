@@ -1,6 +1,6 @@
 {
   "name": "PWA Logistik Personal",
-  "description": "Aplikasi Progressive Web App personal untuk manajemen barang masuk (supply) dan keluar (distribusi) dengan sinkronisasi Google Sheets.",
+  "description": "Aplikasi Progressive Web App personal untuk manajemen barang masuk (supply) dan keluar (distribusi) dengan penyimpanan lokal aman dan riwayat pengiriman.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

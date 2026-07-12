@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DistributionItem } from '../types';
-import { MapPin, Plus, Trash2, Calendar, Map, AlertCircle, ShoppingBag, Layers } from 'lucide-react';
+import { MapPin, Plus, Trash2, Calendar, Map, AlertCircle, ShoppingBag, Layers, Check } from 'lucide-react';
 
 interface DistributionManagerProps {
   items: DistributionItem[];
@@ -32,12 +32,25 @@ export default function DistributionManager({
   });
   const [error, setError] = useState('');
 
-  // Predefined jar types for suggestions
+  // Track selected dates for the history dropdowns of each location row
+  const [selectedDates, setSelectedDates] = useState<Record<string, string>>({});
+
+  // Predefined types for suggestions
   const jarTypes = ['Manco Crunch', 'Fruity Candy'];
+
+  // Calculate if typed location name is an existing location (case-insensitive)
+  const matchedLocation = items.find(
+    (item) => item.locationName.toLowerCase().trim() === locationName.toLowerCase().trim()
+  );
+  const isExistingLocation = !!matchedLocation;
 
   // Stats calculation
   const totalLocations = items.length;
-  const totalJars = items.reduce((acc, item) => acc + item.jarQuantity, 0);
+  // totalJars is the sum of ALL quantities across ALL delivery records of ALL locations
+  const totalJars = items.reduce(
+    (acc, item) => acc + item.deliveries.reduce((sum, d) => sum + d.jarQuantity, 0),
+    0
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,11 +65,15 @@ export default function DistributionManager({
     
     const finalJarType = selectedJarType === 'Custom' ? customJarType.trim() : selectedJarType;
     if (!finalJarType) {
-      setError('Jenis/Tipe toples tidak boleh kosong');
+      setError('Jenis tidak boleh kosong');
       return;
     }
-    if (!mapEmbedCode.trim() || !mapEmbedCode.includes('<iframe')) {
-      setError('Kode embed Google Maps (<iframe>) tidak valid');
+
+    // For existing location, the map is permanent and does not need to be validated or re-entered
+    const finalMapEmbedCode = isExistingLocation ? matchedLocation.mapEmbedCode : mapEmbedCode.trim();
+
+    if (!isExistingLocation && (!finalMapEmbedCode || !finalMapEmbedCode.includes('<iframe'))) {
+      setError('Kode embed Google Maps (<iframe>) tidak valid untuk lokasi baru ini');
       return;
     }
     if (!entryDate) {
@@ -68,7 +85,7 @@ export default function DistributionManager({
       locationName: locationName.trim(),
       jarQuantity: Number(jarQuantity),
       jarType: finalJarType,
-      mapEmbedCode: mapEmbedCode.trim(),
+      mapEmbedCode: finalMapEmbedCode,
       entryDate,
     });
 
@@ -81,9 +98,18 @@ export default function DistributionManager({
     setError('');
   };
 
+  // Get matching locations as user types (autocomplete suggestions)
+  const suggestions = locationName.trim()
+    ? items.filter(
+        (item) =>
+          item.locationName.toLowerCase().includes(locationName.toLowerCase()) &&
+          item.locationName.toLowerCase().trim() !== locationName.toLowerCase().trim()
+      )
+    : [];
+
   // Extract maps preview url securely
   const getIframeSrc = (iframeStr: string) => {
-    const match = iframeStr.match(/src="([^"]+)"/);
+    const match = iframeStr?.match(/src="([^"]+)"/);
     return match ? match[1] : '';
   };
 
@@ -140,7 +166,7 @@ export default function DistributionManager({
               </div>
             )}
 
-            <div>
+            <div className="relative">
               <label htmlFor="locationName" className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
                 Nama Lokasi / Agen
               </label>
@@ -152,6 +178,34 @@ export default function DistributionManager({
                 placeholder="Contoh: Toko Berkah Abadi, Agen Sleman"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
               />
+
+              {/* Autocomplete Suggestions */}
+              {suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto divide-y divide-slate-100">
+                  <div className="p-2 text-[10px] font-bold text-slate-400 bg-slate-50 uppercase tracking-wider">Pilih Lokasi Terdaftar:</div>
+                  {suggestions.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setLocationName(item.locationName);
+                        setMapEmbedCode(item.mapEmbedCode);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center space-x-1.5"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+                      <span className="font-semibold">{item.locationName}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {isExistingLocation && (
+                <div className="mt-1.5 flex items-center space-x-1 text-[11px] text-emerald-600 font-semibold bg-emerald-50/50 border border-emerald-100 px-2 py-1 rounded-lg">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Lokasi Terdaftar: Kode Google Maps otomatis disesuaikan.</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -171,7 +225,7 @@ export default function DistributionManager({
 
               <div>
                 <label htmlFor="jarType" className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
-                  Jenis/Tipe Toples
+                  Jenis
                 </label>
                 <div className="relative">
                   <select
@@ -195,7 +249,7 @@ export default function DistributionManager({
             {selectedJarType === 'Custom' && (
               <div>
                 <label htmlFor="customJarType" className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
-                  Tulis Jenis Toples Kustom
+                  Tulis Jenis Kustom
                 </label>
                 <input
                   id="customJarType"
@@ -215,14 +269,21 @@ export default function DistributionManager({
               <textarea
                 id="mapEmbedCode"
                 rows={3}
-                value={mapEmbedCode}
+                value={isExistingLocation ? matchedLocation.mapEmbedCode : mapEmbedCode}
                 onChange={(e) => setMapEmbedCode(e.target.value)}
-                placeholder='Contoh: <iframe src="https://www.google.com/maps/embed?pb=..." ...></iframe>'
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                disabled={isExistingLocation}
+                placeholder={isExistingLocation ? 'Kode google maps terkunci untuk lokasi terdaftar ini.' : 'Contoh: <iframe src="https://www.google.com/maps/embed?pb=..." ...></iframe>'}
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm font-mono text-xs focus:outline-none transition ${
+                  isExistingLocation
+                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-50 border-slate-200 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white'
+                }`}
               />
-              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                Salin dari Google Maps: Bagikan &rarr; Sematkan Peta &rarr; Salin HTML.
-              </p>
+              {!isExistingLocation && (
+                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                  Salin dari Google Maps: Bagikan &rarr; Sematkan Peta &rarr; Salin HTML.
+                </p>
+              )}
             </div>
 
             <div>
@@ -269,91 +330,108 @@ export default function DistributionManager({
                 <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 z-10">
                   <tr>
                     <th className="p-4 font-semibold text-slate-600 uppercase tracking-wider text-xs">Nama Lokasi</th>
-                    <th className="p-4 font-semibold text-slate-600 uppercase tracking-wider text-xs">Toples & Jenis</th>
+                    <th className="p-4 font-semibold text-slate-600 uppercase tracking-wider text-xs">Jumlah Toples & Jenis</th>
                     <th className="p-4 font-semibold text-slate-600 uppercase tracking-wider text-xs">Riwayat Distribusi (History)</th>
                     <th className="p-4 font-semibold text-slate-600 uppercase tracking-wider text-xs">Preview Peta</th>
                     <th className="p-4 font-semibold text-slate-600 uppercase tracking-wider text-xs text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {items.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition">
-                      {/* Location Name */}
-                      <td className="p-4">
-                        <div className="font-semibold text-slate-800 flex items-center space-x-1">
-                          <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
-                          <span>{item.locationName}</span>
-                        </div>
-                      </td>
+                  {items.map((item) => {
+                    const currentSelectedDate = selectedDates[item.id] || (item.deliveries[0]?.date || '');
+                    const activeDelivery = item.deliveries.find(d => d.date === currentSelectedDate) || item.deliveries[0];
 
-                      {/* Jar Quantity and Type */}
-                      <td className="p-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-800">{item.jarQuantity} Pcs</span>
-                          <span className="text-xs text-slate-500">{item.jarType}</span>
-                        </div>
-                      </td>
-
-                      {/* History Date Dropdown */}
-                      <td className="p-4">
-                        <div className="relative max-w-[160px]">
-                          <select
-                            className="w-full pl-2.5 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            defaultValue={item.historyDates[0]}
-                            title="Riwayat tanggal distribusi"
-                          >
-                            {item.historyDates.map((date, idx) => (
-                              <option key={`${date}-${idx}`} value={date}>
-                                {date} {idx === 0 ? '(Terbaru)' : ''}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-400">
-                            <Calendar className="w-3 h-3" />
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                        {/* Location Name */}
+                        <td className="p-4">
+                          <div className="font-semibold text-slate-800 flex items-center space-x-1">
+                            <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <span>{item.locationName}</span>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Interactive Map Preview (Lightbox target) */}
-                      <td className="p-4">
-                        <div
-                          onClick={() => onShowMap(item.mapEmbedCode, item.locationName)}
-                          className="relative w-24 h-14 rounded-lg overflow-hidden border border-slate-200 shadow-xs cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group"
-                          title="Klik untuk memperbesar peta"
-                        >
-                          {/* We extract the URL to put in a non-interactive iframe with pointer-events-none */}
-                          <iframe
-                            src={getIframeSrc(item.mapEmbedCode)}
-                            className="w-full h-full pointer-events-none scale-100 origin-center transition group-hover:scale-105"
-                            style={{ border: 0 }}
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 bg-indigo-900/10 group-hover:bg-indigo-900/0 transition-all flex items-center justify-center">
-                            <div className="bg-white/90 p-1 rounded-full shadow-xs opacity-0 group-hover:opacity-100 transition duration-200">
-                              <Map className="w-3.5 h-3.5 text-indigo-600" />
+                        {/* Jar Quantity and Type */}
+                        <td className="p-4">
+                          {activeDelivery ? (
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-800">{activeDelivery.jarQuantity} Pcs</span>
+                              <span className="text-xs text-slate-500">{activeDelivery.jarType}</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
+                        </td>
+
+                        {/* History Date Dropdown */}
+                        <td className="p-4">
+                          {item.deliveries.length > 0 ? (
+                            <div className="relative max-w-[160px]">
+                              <select
+                                className="w-full pl-2.5 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                value={currentSelectedDate}
+                                onChange={(e) => {
+                                  const newDate = e.target.value;
+                                  setSelectedDates(prev => ({ ...prev, [item.id]: newDate }));
+                                }}
+                                title="Riwayat tanggal distribusi"
+                              >
+                                {item.deliveries.map((delivery, idx) => (
+                                  <option key={`${delivery.date}-${idx}`} value={delivery.date}>
+                                    {delivery.date} {idx === 0 ? '(Terbaru)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-400">
+                                <Calendar className="w-3 h-3" />
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">Belum ada riwayat</span>
+                          )}
+                        </td>
+
+                        {/* Interactive Map Preview (Lightbox target) */}
+                        <td className="p-4">
+                          <div
+                            onClick={() => onShowMap(item.mapEmbedCode, item.locationName)}
+                            className="relative w-24 h-14 rounded-lg overflow-hidden border border-slate-200 shadow-xs cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group"
+                            title="Klik untuk memperbesar peta"
+                          >
+                            {/* We extract the URL to put in a non-interactive iframe with pointer-events-none */}
+                            <iframe
+                              src={getIframeSrc(item.mapEmbedCode)}
+                              className="w-full h-full pointer-events-none scale-100 origin-center transition group-hover:scale-105"
+                              style={{ border: 0 }}
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 bg-indigo-900/10 group-hover:bg-indigo-900/0 transition-all flex items-center justify-center">
+                              <div className="bg-white/90 p-1 rounded-full shadow-xs opacity-0 group-hover:opacity-100 transition duration-200">
+                                <Map className="w-3.5 h-3.5 text-indigo-600" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Action column */}
-                      <td className="p-4 text-center">
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Hapus seluruh data distribusi untuk lokasi "${item.locationName}"?`)) {
-                              onDeleteDistribution(item.id);
-                            }
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
-                          title="Hapus lokasi"
-                          id={`btn-delete-distribution-${item.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        {/* Action column */}
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Hapus seluruh data distribusi untuk lokasi "${item.locationName}"?`)) {
+                                onDeleteDistribution(item.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                            title="Hapus lokasi"
+                            id={`btn-delete-distribution-${item.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

@@ -220,16 +220,14 @@ export default function SyncPanel({ supplyItems, distributionItems, onImportData
       ];
 
       // 3. Format Distribution Rows
-      // To preserve history dates correctly, we can join them with commas
+      // To preserve deliveries, we serialize them to clean JSON inside cell or handle them as JSON
       const distributionValues = [
-        ['ID', 'Nama Lokasi', 'Jumlah Toples', 'Jenis Toples', 'Embed Google Maps', 'Riwayat Tanggal (History)'],
+        ['ID', 'Nama Lokasi', 'Embed Google Maps', 'Riwayat Distribusi (JSON)'],
         ...distributionItems.map(item => [
           item.id,
           item.locationName,
-          item.jarQuantity,
-          item.jarType,
           item.mapEmbedCode,
-          item.historyDates.join(', ')
+          JSON.stringify(item.deliveries)
         ])
       ];
 
@@ -316,15 +314,39 @@ export default function SyncPanel({ supplyItems, distributionItems, onImportData
         for (let i = 1; i < distributionData.values.length; i++) {
           const row = distributionData.values[i];
           if (row[0] && row[1]) {
-            // Re-parse comma-separated historyDates
-            const historyDates = row[5] ? row[5].split(',').map((d: string) => d.trim()).filter(Boolean) : [];
+            let deliveriesList = [];
+            // Check if the 4th column is parsable JSON
+            if (row[3]) {
+              try {
+                deliveriesList = JSON.parse(row[3]);
+              } catch (e) {
+                // Legacy data format or fallback parsing
+                const legacyQty = Number(row[2] || 0);
+                const legacyType = row[3] || 'Manco Crunch';
+                deliveriesList = [
+                  {
+                    date: '2026-07-11',
+                    jarQuantity: legacyQty,
+                    jarType: legacyType,
+                  }
+                ];
+              }
+            } else {
+              // Legacy fallback
+              deliveriesList = [
+                {
+                  date: '2026-07-11',
+                  jarQuantity: Number(row[2] || 0),
+                  jarType: 'Manco Crunch',
+                }
+              ];
+            }
+
             importedDistribution.push({
               id: row[0],
               locationName: row[1],
-              jarQuantity: Number(row[2] || 0),
-              jarType: row[3] || 'Toples Kaca',
-              mapEmbedCode: row[4] || '',
-              historyDates: historyDates.length > 0 ? historyDates : ['2026-07-11'], // fallback
+              mapEmbedCode: row[2] || '',
+              deliveries: Array.isArray(deliveriesList) ? deliveriesList : [],
             });
           }
         }

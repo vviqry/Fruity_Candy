@@ -6,13 +6,17 @@ export interface SupplyItem {
   entryDate: string;
 }
 
+export interface DeliveryHistory {
+  date: string;
+  jarQuantity: number;
+  jarType: string;
+}
+
 export interface DistributionItem {
   id: string;
   locationName: string;
-  jarQuantity: number;
-  jarType: string;
   mapEmbedCode: string;
-  historyDates: string[]; // List of date strings for history dropdown
+  deliveries: DeliveryHistory[];
 }
 
 export interface SyncData {
