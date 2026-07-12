@@ -11,7 +11,7 @@ export default function App() {
   // App state
   const [supplyItems, setSupplyItems] = useState<SupplyItem[]>([]);
   const [distributionItems, setDistributionItems] = useState<DistributionItem[]>([]);
-  const [activeTab, setActiveTab] = useState<'supply' | 'distribution' | 'sync'>('supply');
+  const [activeTab, setActiveTab] = useState<'supply' | 'distribution'>('supply');
   const [online, setOnline] = useState(navigator.onLine);
 
   // Lightbox state
@@ -258,7 +258,7 @@ export default function App() {
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Navigation Tabs */}
-        <div className="flex bg-white p-1 rounded-xl border border-slate-200/60 max-w-md mb-6 shadow-xs">
+        <div className="flex bg-white p-1 rounded-xl border border-slate-200/60 max-w-md mx-auto mb-6 shadow-xs">
           <button
             onClick={() => setActiveTab('supply')}
             className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-bold transition duration-200 ${
@@ -274,7 +274,7 @@ export default function App() {
           
           <button
             onClick={() => setActiveTab('distribution')}
-            className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-bold transition duration-200 ${
+            className={`flex-1 flex-items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-bold transition duration-200 ${
               activeTab === 'distribution'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
@@ -283,19 +283,6 @@ export default function App() {
           >
             <ArrowUpRight className="w-4 h-4" />
             <span>Distribusi (Barang Keluar)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('sync')}
-            className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-bold transition duration-200 ${
-              activeTab === 'sync'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-            }`}
-            id="tab-sync"
-          >
-            <Database className="w-4 h-4" />
-            <span>Sinkronisasi</span>
           </button>
         </div>
 
@@ -326,20 +313,6 @@ export default function App() {
                 onAddDistribution={handleAddDistribution}
                 onDeleteDistribution={handleDeleteDistribution}
                 onShowMap={handleShowMap}
-              />
-            </motion.div>
-          )}
-
-          {activeTab === 'sync' && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <SyncPanel
-                supplyItems={supplyItems}
-                distributionItems={distributionItems}
-                onImportData={handleImportData}
               />
             </motion.div>
           )}
