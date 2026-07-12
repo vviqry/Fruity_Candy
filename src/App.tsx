@@ -42,7 +42,42 @@ export default function App() {
 
     if (localDistribution) {
       try {
-        setDistributionItems(JSON.parse(localDistribution));
+        const parsed = JSON.parse(localDistribution);
+        const migrated = parsed.map((item: any) => {
+          if (!item.deliveries) {
+            // Reconstruct deliveries array from old properties
+            const deliveries = [];
+            const historyDates = Array.isArray(item.historyDates) && item.historyDates.length > 0
+              ? item.historyDates
+              : ['2026-07-11'];
+            
+            historyDates.forEach((date: string, idx: number) => {
+              deliveries.push({
+                date,
+                jarQuantity: idx === 0 ? (item.jarQuantity || 0) : 0,
+                jarType: item.jarType || 'Manco Crunch',
+              });
+            });
+
+            if (deliveries.length === 0) {
+              deliveries.push({
+                date: '2026-07-11',
+                jarQuantity: item.jarQuantity || 0,
+                jarType: item.jarType || 'Manco Crunch',
+              });
+            }
+
+            return {
+              id: item.id,
+              locationName: item.locationName,
+              mapEmbedCode: item.mapEmbedCode || '',
+              deliveries,
+            };
+          }
+          return item;
+        });
+        setDistributionItems(migrated);
+        localStorage.setItem('pwa_logistik_distribution', JSON.stringify(migrated));
       } catch (e) {
         console.error('Error loading distribution:', e);
       }

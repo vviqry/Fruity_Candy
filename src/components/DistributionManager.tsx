@@ -48,7 +48,7 @@ export default function DistributionManager({
   const totalLocations = items.length;
   // totalJars is the sum of ALL quantities across ALL delivery records of ALL locations
   const totalJars = items.reduce(
-    (acc, item) => acc + item.deliveries.reduce((sum, d) => sum + d.jarQuantity, 0),
+    (acc, item) => acc + (item.deliveries || []).reduce((sum, d) => sum + (d?.jarQuantity || 0), 0),
     0
   );
 
@@ -338,8 +338,9 @@ export default function DistributionManager({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {items.map((item) => {
-                    const currentSelectedDate = selectedDates[item.id] || (item.deliveries[0]?.date || '');
-                    const activeDelivery = item.deliveries.find(d => d.date === currentSelectedDate) || item.deliveries[0];
+                    const deliveries = item.deliveries || [];
+                    const currentSelectedDate = selectedDates[item.id] || (deliveries[0]?.date || '');
+                    const activeDelivery = deliveries.find(d => d.date === currentSelectedDate) || deliveries[0];
 
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/50 transition">
@@ -365,7 +366,7 @@ export default function DistributionManager({
 
                         {/* History Date Dropdown */}
                         <td className="p-4">
-                          {item.deliveries.length > 0 ? (
+                          {deliveries.length > 0 ? (
                             <div className="relative max-w-[160px]">
                               <select
                                 className="w-full pl-2.5 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -376,7 +377,7 @@ export default function DistributionManager({
                                 }}
                                 title="Riwayat tanggal distribusi"
                               >
-                                {item.deliveries.map((delivery, idx) => (
+                                {deliveries.map((delivery, idx) => (
                                   <option key={`${delivery.date}-${idx}`} value={delivery.date}>
                                     {delivery.date} {idx === 0 ? '(Terbaru)' : ''}
                                   </option>
