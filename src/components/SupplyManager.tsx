@@ -25,6 +25,26 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
   const yellowCount = items.filter(item => item.category === '🟡').length;
   const greenCount = items.filter(item => item.category === '🟢').length;
 
+  // Group by date and calculate daily total cost
+  const dailyTotals = items.reduce((acc, item) => {
+    const date = item.entryDate;
+    if (!acc[date]) {
+      acc[date] = {
+        date,
+        totalCost: 0,
+        itemCount: 0,
+        categories: { '🔴': 0, '🟡': 0, '🟢': 0 }
+      };
+    }
+    acc[date].totalCost += item.price;
+    acc[date].itemCount += 1;
+    acc[date].categories[item.category] = (acc[date].categories[item.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, { date: string; totalCost: number; itemCount: number; categories: Record<string, number> }>);
+
+  // Convert to array and sort descending by date
+  const sortedDailyTotals = Object.values(dailyTotals).sort((a, b) => b.date.localeCompare(a.date));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!productName.trim()) {
@@ -201,14 +221,14 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
         </div>
 
         {/* Table Column */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs lg:col-span-2 flex flex-col h-[500px]">
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs lg:col-span-2 flex flex-col min-h-[500px]">
           <h3 className="font-bold text-slate-800 text-lg mb-4">
             Tabel Supply (Barang Masuk)
           </h3>
 
-          <div className="flex-1 overflow-auto rounded-xl border border-slate-100">
+          <div className="max-h-[320px] overflow-auto rounded-xl border border-slate-100">
             {items.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-10 space-y-2">
+              <div className="h-64 flex flex-col items-center justify-center text-slate-400 py-10 space-y-2">
                 <Package className="w-10 h-10 text-slate-300" />
                 <p className="text-sm">Belum ada barang masuk yang dicatat.</p>
                 <p className="text-xs text-slate-400">Silakan isi form di samping untuk mulai menyimpan data.</p>
@@ -258,6 +278,51 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
               </table>
             )}
           </div>
+
+          {/* Daily Totals Summary */}
+          {items.length > 0 && (
+            <div className="mt-5 border-t border-slate-100 pt-5 flex-1">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                <Calendar className="w-4 h-4 text-blue-500" />
+                <span>Ringkasan Total Biaya per Tanggal (Daily Costs)</span>
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {sortedDailyTotals.map((day) => (
+                  <div key={day.date} className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 flex items-center justify-between hover:bg-slate-50 transition shadow-2xs">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-lg">
+                          {day.date}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-medium">({day.itemCount} Item)</span>
+                      </div>
+                      <div className="flex space-x-2 items-center mt-1">
+                        {day.categories['🔴'] > 0 && (
+                          <span className="inline-flex items-center text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-md font-semibold border border-red-100/50">
+                            🔴 {day.categories['🔴']}
+                          </span>
+                        )}
+                        {day.categories['🟡'] > 0 && (
+                          <span className="inline-flex items-center text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-md font-semibold border border-amber-100/50">
+                            🟡 {day.categories['🟡']}
+                          </span>
+                        )}
+                        {day.categories['🟢'] > 0 && (
+                          <span className="inline-flex items-center text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-md font-semibold border border-emerald-100/50">
+                            🟢 {day.categories['🟢']}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Total Cost</p>
+                      <p className="text-sm font-extrabold text-blue-600">{formatIDR(day.totalCost)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
