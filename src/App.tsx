@@ -4,7 +4,7 @@ import SupplyManager from './components/SupplyManager';
 import DistributionManager from './components/DistributionManager';
 import SyncPanel from './components/SyncPanel';
 import IframeLightbox from './components/IframeLightbox';
-import { Cherry, ArrowDownLeft, ArrowUpRight, Database, MapPin, Layers, Wifi, WifiOff } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Database, MapPin, Layers, Wifi, WifiOff } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function App() {
@@ -266,12 +266,13 @@ export default function App() {
       <header className="sticky top-0 bg-white border-b border-slate-100 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-pink-500 text-white rounded-xl shadow-md shadow-pink-500/10">
-              <Cherry className="w-5 h-5" />
+            <div className="relative flex items-center justify-center w-11 h-11 bg-gradient-to-br from-amber-50 to-orange-100 rounded-xl border border-amber-200 shadow-xs hover:scale-105 transition-transform duration-200 select-none">
+              <span className="text-2xl" role="img" aria-label="Fruit Basket">🧺</span>
+              <span className="absolute -top-1 -right-1 text-xs drop-shadow-xs animate-bounce">🍒</span>
             </div>
             <div>
               <h1 className="font-bold text-slate-900 tracking-tight leading-tight text-base sm:text-lg">
-                PWA Logistik Personal
+                Crunchy Snack House
               </h1>
               <p className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">
                 Supply &amp; Distribusi Manager

@@ -1,5 +1,5 @@
 {
-  "name": "PWA Logistik Personal",
+  "name": "Crunchy Snack House",
   "description": "Aplikasi Progressive Web App personal untuk manajemen barang masuk (supply) dan keluar (distribusi) dengan penyimpanan lokal aman dan riwayat pengiriman.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
