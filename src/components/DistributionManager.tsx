@@ -23,7 +23,8 @@ export default function DistributionManager({
 }: DistributionManagerProps) {
   const [locationName, setLocationName] = useState('');
   const [jarQuantity, setJarQuantity] = useState<number | ''>('');
-  const [jarType, setJarType] = useState('Toples Kaca');
+  const [selectedJarType, setSelectedJarType] = useState('Manco Crunch');
+  const [customJarType, setCustomJarType] = useState('');
   const [mapEmbedCode, setMapEmbedCode] = useState('');
   const [entryDate, setEntryDate] = useState(() => {
     const today = new Date();
@@ -32,7 +33,7 @@ export default function DistributionManager({
   const [error, setError] = useState('');
 
   // Predefined jar types for suggestions
-  const jarTypes = ['Toples Kaca', 'Toples Plastik', 'Toples Keramik', 'Toples Kristal', 'Toples Aluminium'];
+  const jarTypes = ['Manco Crunch', 'Fruity Candy'];
 
   // Stats calculation
   const totalLocations = items.length;
@@ -48,7 +49,9 @@ export default function DistributionManager({
       setError('Jumlah toples harus berupa angka lebih besar dari 0');
       return;
     }
-    if (!jarType.trim()) {
+    
+    const finalJarType = selectedJarType === 'Custom' ? customJarType.trim() : selectedJarType;
+    if (!finalJarType) {
       setError('Jenis/Tipe toples tidak boleh kosong');
       return;
     }
@@ -64,7 +67,7 @@ export default function DistributionManager({
     onAddDistribution({
       locationName: locationName.trim(),
       jarQuantity: Number(jarQuantity),
-      jarType: jarType.trim(),
+      jarType: finalJarType,
       mapEmbedCode: mapEmbedCode.trim(),
       entryDate,
     });
@@ -72,6 +75,8 @@ export default function DistributionManager({
     // Reset Form
     setLocationName('');
     setJarQuantity('');
+    setSelectedJarType('Manco Crunch');
+    setCustomJarType('');
     setMapEmbedCode('');
     setError('');
   };
@@ -171,8 +176,8 @@ export default function DistributionManager({
                 <div className="relative">
                   <select
                     id="jarType"
-                    value={jarType}
-                    onChange={(e) => setJarType(e.target.value)}
+                    value={selectedJarType}
+                    onChange={(e) => setSelectedJarType(e.target.value)}
                     className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition appearance-none"
                   >
                     {jarTypes.map(t => (
@@ -187,7 +192,7 @@ export default function DistributionManager({
               </div>
             </div>
 
-            {jarType === 'Custom' && (
+            {selectedJarType === 'Custom' && (
               <div>
                 <label htmlFor="customJarType" className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
                   Tulis Jenis Toples Kustom
@@ -195,8 +200,9 @@ export default function DistributionManager({
                 <input
                   id="customJarType"
                   type="text"
+                  value={customJarType}
                   placeholder="Contoh: Toples Melamin Premium"
-                  onChange={(e) => setJarType(e.target.value)}
+                  onChange={(e) => setCustomJarType(e.target.value)}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
                 />
               </div>

@@ -404,10 +404,12 @@ export default function SyncPanel({ supplyItems, distributionItems, onImportData
                       </ol>
 
                       <div className="space-y-1.5 mt-2">
-                        {[
+                        {[...new Set([
+                          typeof window !== 'undefined' ? window.location.hostname : '',
+                          'fruity-candy.vercel.app',
                           'ais-dev-55ajnqjlzioudkywxhiyuj-85817899694.asia-east1.run.app',
                           'ais-pre-55ajnqjlzioudkywxhiyuj-85817899694.asia-east1.run.app'
-                        ].map((domain) => (
+                        ].filter(Boolean))].map((domain) => (
                           <div key={domain} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-slate-700">
                             <span className="truncate flex-1 mr-2">{domain}</span>
                             <button
