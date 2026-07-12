@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SupplyItem } from '../types';
-import { Plus, Trash2, Tag, Calendar, DollarSign, Package, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Tag, Calendar, DollarSign, Package, AlertCircle, Lock } from 'lucide-react';
 import { formatDateIndo } from '../utils/dateFormatter';
 
 interface SupplyManagerProps {
@@ -18,6 +18,31 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
     return today.toISOString().split('T')[0];
   });
   const [error, setError] = useState('');
+
+  // Admin PIN verification state
+  const [pinPrompt, setPinPrompt] = useState<{
+    isOpen: boolean;
+    onSuccess: () => void;
+    errorMsg: string;
+    enteredPin: string;
+    actionLabel: string;
+  }>({
+    isOpen: false,
+    onSuccess: () => {},
+    errorMsg: '',
+    enteredPin: '',
+    actionLabel: '',
+  });
+
+  const requireAdminAuth = (actionLabel: string, onSuccess: () => void) => {
+    setPinPrompt({
+      isOpen: true,
+      onSuccess,
+      errorMsg: '',
+      enteredPin: '',
+      actionLabel,
+    });
+  };
 
   // Stats calculation
   const totalItems = items.length;
@@ -262,9 +287,9 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
                       <td className="p-4 text-center">
                         <button
                           onClick={() => {
-                            if (window.confirm(`Hapus pencatatan supply untuk "${item.productName}"?`)) {
+                            requireAdminAuth(`Hapus supply untuk "${item.productName}"`, () => {
                               onDeleteItem(item.id);
-                            }
+                            });
                           }}
                           className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
                           title="Hapus"
@@ -326,6 +351,80 @@ export default function SupplyManager({ items, onAddItem, onDeleteItem }: Supply
           )}
         </div>
       </div>
+
+      {/* Admin PIN Verification Modal */}
+      {pinPrompt.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full border border-slate-100 p-6 shadow-xl space-y-4">
+            <div className="flex items-center space-x-3 text-red-600">
+              <div className="p-2 bg-red-50 rounded-xl">
+                <Lock className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-slate-900">Verifikasi Akses Admin</h4>
+            </div>
+            
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Tindakan <span className="font-semibold text-slate-700">"{pinPrompt.actionLabel}"</span> dilindungi oleh sistem. Masukkan PIN Admin untuk melanjutkan tindakan penghapusan ini.
+            </p>
+
+            <div className="space-y-1.5">
+              <label htmlFor="adminPin" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                PIN Admin
+              </label>
+              <input
+                id="adminPin"
+                type="password"
+                placeholder="Masukkan PIN Admin..."
+                value={pinPrompt.enteredPin}
+                onChange={(e) => setPinPrompt(prev => ({ ...prev, enteredPin: e.target.value, errorMsg: '' }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (pinPrompt.enteredPin === 'admin123') {
+                      pinPrompt.onSuccess();
+                      setPinPrompt(prev => ({ ...prev, isOpen: false }));
+                    } else {
+                      setPinPrompt(prev => ({ ...prev, errorMsg: 'PIN Admin yang dimasukkan salah!' }));
+                    }
+                  }
+                }}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition"
+                autoFocus
+              />
+              {pinPrompt.errorMsg && (
+                <p className="text-[11px] text-red-600 font-semibold">{pinPrompt.errorMsg}</p>
+              )}
+            </div>
+
+            <p className="text-[10px] text-slate-400 bg-slate-50 p-2 rounded-lg border border-slate-100 text-center font-medium">
+              💡 Bantuan pengujian PIN bawaan: <span className="font-mono font-bold text-slate-600">admin123</span>
+            </p>
+
+            <div className="flex space-x-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setPinPrompt(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs border border-slate-200 transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pinPrompt.enteredPin === 'admin123') {
+                    pinPrompt.onSuccess();
+                    setPinPrompt(prev => ({ ...prev, isOpen: false }));
+                  } else {
+                    setPinPrompt(prev => ({ ...prev, errorMsg: 'PIN Admin yang dimasukkan salah!' }));
+                  }
+                }}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-xs transition"
+              >
+                Konfirmasi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

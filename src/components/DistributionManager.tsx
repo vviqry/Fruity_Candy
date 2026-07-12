@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DistributionItem } from '../types';
-import { MapPin, Plus, Trash2, Calendar, Map, AlertCircle, ShoppingBag, Layers, Check } from 'lucide-react';
+import { MapPin, Plus, Trash2, Calendar, Map, AlertCircle, ShoppingBag, Layers, Check, Lock } from 'lucide-react';
 import { formatDateIndo } from '../utils/dateFormatter';
 
 interface DistributionManagerProps {
@@ -13,6 +13,8 @@ interface DistributionManagerProps {
     entryDate: string;
   }) => void;
   onDeleteDistribution: (id: string) => void;
+  onDeleteDelivery: (id: string, date: string) => void;
+  onToggleDeliveryStatus: (id: string, date: string) => void;
   onShowMap: (embedCode: string, locationName: string) => void;
 }
 
@@ -20,6 +22,8 @@ export default function DistributionManager({
   items,
   onAddDistribution,
   onDeleteDistribution,
+  onDeleteDelivery,
+  onToggleDeliveryStatus,
   onShowMap,
 }: DistributionManagerProps) {
   const [locationName, setLocationName] = useState('');
@@ -35,6 +39,31 @@ export default function DistributionManager({
 
   // Track selected dates for the history dropdowns of each location row
   const [selectedDates, setSelectedDates] = useState<Record<string, string>>({});
+
+  // Admin PIN verification state
+  const [pinPrompt, setPinPrompt] = useState<{
+    isOpen: boolean;
+    onSuccess: () => void;
+    errorMsg: string;
+    enteredPin: string;
+    actionLabel: string;
+  }>({
+    isOpen: false,
+    onSuccess: () => {},
+    errorMsg: '',
+    enteredPin: '',
+    actionLabel: '',
+  });
+
+  const requireAdminAuth = (actionLabel: string, onSuccess: () => void) => {
+    setPinPrompt({
+      isOpen: true,
+      onSuccess,
+      errorMsg: '',
+      enteredPin: '',
+      actionLabel,
+    });
+  };
 
   // Predefined types for suggestions
   const jarTypes = ['Manco Crunch', 'Fruity Candy'];
@@ -356,9 +385,26 @@ export default function DistributionManager({
                         {/* Jar Quantity and Type */}
                         <td className="p-4">
                           {activeDelivery ? (
-                            <div className="flex flex-col">
-                              <span className="font-bold text-slate-800">{activeDelivery.jarQuantity} Pcs</span>
-                              <span className="text-xs text-slate-500">{activeDelivery.jarType}</span>
+                            <div className="flex flex-col space-y-1.5">
+                              <div className={activeDelivery.status === 'habis' ? 'line-through text-slate-400 opacity-60' : ''}>
+                                <div className="font-bold text-slate-800 text-sm">{activeDelivery.jarQuantity} Pcs</div>
+                                <div className="text-xs text-slate-500">{activeDelivery.jarType}</div>
+                              </div>
+                              {/* Status Toggler Badge */}
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() => onToggleDeliveryStatus(item.id, activeDelivery.date)}
+                                  className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition shadow-3xs cursor-pointer ${
+                                    activeDelivery.status === 'habis'
+                                      ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+                                      : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100'
+                                  }`}
+                                  title="Klik untuk ubah status ketersediaan"
+                                >
+                                  <span>{activeDelivery.status === 'habis' ? '🔴 Habis' : '🟢 Tersedia'}</span>
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <span className="text-xs text-slate-400">-</span>
@@ -416,20 +462,39 @@ export default function DistributionManager({
                           </div>
                         </td>
 
-                        {/* Action column */}
-                        <td className="p-4 text-center">
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Hapus seluruh data distribusi untuk lokasi "${item.locationName}"?`)) {
-                                onDeleteDistribution(item.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
-                            title="Hapus lokasi"
-                            id={`btn-delete-distribution-${item.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        {/* Action column - 2 Options of deletion */}
+                        <td className="p-4">
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                            {activeDelivery && (
+                              <button
+                                onClick={() => {
+                                  requireAdminAuth(`Hapus riwayat tanggal ${formatDateIndo(activeDelivery.date)}`, () => {
+                                    onDeleteDelivery(item.id, activeDelivery.date);
+                                  });
+                                }}
+                                className="w-full sm:w-auto inline-flex items-center justify-center space-x-1 px-2 py-1.5 bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-amber-700 border border-slate-200 hover:border-amber-200 rounded-lg text-[10px] font-bold transition"
+                                title="Hapus riwayat tanggal aktif ini saja"
+                                id={`btn-delete-delivery-${item.id}-${activeDelivery.date}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                                <span>Hapus Riwayat</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => {
+                                requireAdminAuth(`Hapus seluruh lokasi "${item.locationName}"`, () => {
+                                  onDeleteDistribution(item.id);
+                                });
+                              }}
+                              className="w-full sm:w-auto inline-flex items-center justify-center space-x-1 px-2 py-1.5 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-lg text-[10px] font-bold transition"
+                              title="Hapus lokasi beserta seluruh riwayatnya"
+                              id={`btn-delete-distribution-${item.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                              <span>Hapus Lokasi</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -440,6 +505,80 @@ export default function DistributionManager({
           </div>
         </div>
       </div>
+
+      {/* Admin PIN Verification Modal */}
+      {pinPrompt.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full border border-slate-100 p-6 shadow-xl space-y-4">
+            <div className="flex items-center space-x-3 text-red-600">
+              <div className="p-2 bg-red-50 rounded-xl">
+                <Lock className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-slate-900">Verifikasi Akses Admin</h4>
+            </div>
+            
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Tindakan <span className="font-semibold text-slate-700">"{pinPrompt.actionLabel}"</span> dilindungi oleh sistem. Masukkan PIN Admin untuk melanjutkan tindakan penghapusan ini.
+            </p>
+
+            <div className="space-y-1.5">
+              <label htmlFor="adminPin" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                PIN Admin
+              </label>
+              <input
+                id="adminPin"
+                type="password"
+                placeholder="Masukkan PIN Admin..."
+                value={pinPrompt.enteredPin}
+                onChange={(e) => setPinPrompt(prev => ({ ...prev, enteredPin: e.target.value, errorMsg: '' }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (pinPrompt.enteredPin === 'admin123') {
+                      pinPrompt.onSuccess();
+                      setPinPrompt(prev => ({ ...prev, isOpen: false }));
+                    } else {
+                      setPinPrompt(prev => ({ ...prev, errorMsg: 'PIN Admin yang dimasukkan salah!' }));
+                    }
+                  }
+                }}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition"
+                autoFocus
+              />
+              {pinPrompt.errorMsg && (
+                <p className="text-[11px] text-red-600 font-semibold">{pinPrompt.errorMsg}</p>
+              )}
+            </div>
+
+            <p className="text-[10px] text-slate-400 bg-slate-50 p-2 rounded-lg border border-slate-100 text-center font-medium">
+              💡 Bantuan pengujian PIN bawaan: <span className="font-mono font-bold text-slate-600">admin123</span>
+            </p>
+
+            <div className="flex space-x-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setPinPrompt(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs border border-slate-200 transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pinPrompt.enteredPin === 'admin123') {
+                    pinPrompt.onSuccess();
+                    setPinPrompt(prev => ({ ...prev, isOpen: false }));
+                  } else {
+                    setPinPrompt(prev => ({ ...prev, errorMsg: 'PIN Admin yang dimasukkan salah!' }));
+                  }
+                }}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-xs transition"
+              >
+                Konfirmasi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import SupplyManager from './components/SupplyManager';
 import DistributionManager from './components/DistributionManager';
 import SyncPanel from './components/SyncPanel';
 import IframeLightbox from './components/IframeLightbox';
-import { Truck, ArrowDownLeft, ArrowUpRight, Database, MapPin, Layers, Wifi, WifiOff } from 'lucide-react';
+import { Cherry, ArrowDownLeft, ArrowUpRight, Database, MapPin, Layers, Wifi, WifiOff } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function App() {
@@ -212,6 +212,40 @@ export default function App() {
     saveDistribution(distributionItems.filter((item) => item.id !== id));
   };
 
+  const handleDeleteDelivery = (id: string, date: string) => {
+    const updated = distributionItems.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          deliveries: item.deliveries.filter((d) => d.date !== date),
+        };
+      }
+      return item;
+    }).filter((item) => item.deliveries.length > 0);
+    saveDistribution(updated);
+  };
+
+  const handleToggleDeliveryStatus = (id: string, date: string) => {
+    const updated = distributionItems.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          deliveries: item.deliveries.map((d) => {
+            if (d.date === date) {
+              return {
+                ...d,
+                status: d.status === 'habis' ? 'tersedia' : 'habis',
+              };
+            }
+            return d;
+          }),
+        };
+      }
+      return item;
+    });
+    saveDistribution(updated);
+  };
+
   // Import operation
   const handleImportData = (data: SyncData) => {
     setSupplyItems(data.supply);
@@ -232,8 +266,8 @@ export default function App() {
       <header className="sticky top-0 bg-white border-b border-slate-100 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-500/10">
-              <Truck className="w-5 h-5" />
+            <div className="p-2 bg-pink-500 text-white rounded-xl shadow-md shadow-pink-500/10">
+              <Cherry className="w-5 h-5" />
             </div>
             <div>
               <h1 className="font-bold text-slate-900 tracking-tight leading-tight text-base sm:text-lg">
@@ -312,6 +346,8 @@ export default function App() {
                 items={distributionItems}
                 onAddDistribution={handleAddDistribution}
                 onDeleteDistribution={handleDeleteDistribution}
+                onDeleteDelivery={handleDeleteDelivery}
+                onToggleDeliveryStatus={handleToggleDeliveryStatus}
                 onShowMap={handleShowMap}
               />
             </motion.div>

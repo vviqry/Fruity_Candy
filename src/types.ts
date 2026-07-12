@@ -10,6 +10,7 @@ export interface DeliveryHistory {
   date: string;
   jarQuantity: number;
   jarType: string;
+  status?: 'tersedia' | 'habis';
 }
 
 export interface DistributionItem {
