@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SupplyItem, DistributionItem, SyncData } from '../types';
 import { googleSignIn, googleSignOut, initAuth, getAccessToken } from '../firebase';
 import { User } from 'firebase/auth';
-import { Database, FileText, Check, Copy, Upload, Download, LogIn, LogOut, RefreshCw, AlertCircle, Sparkles, Plus } from 'lucide-react';
+import { Database, FileText, Check, Copy, Upload, Download, LogIn, LogOut, RefreshCw, AlertCircle, Sparkles, Plus, ExternalLink } from 'lucide-react';
 
 interface SyncPanelProps {
   supplyItems: SupplyItem[];
@@ -27,6 +27,17 @@ export default function SyncPanel({ supplyItems, distributionItems, onImportData
   });
   const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [syncMessage, setSyncMessage] = useState('');
+  const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
+
+  const handleCopyDomain = async (domain: string) => {
+    try {
+      await navigator.clipboard.writeText(domain);
+      setCopiedDomain(domain);
+      setTimeout(() => setCopiedDomain(null), 2000);
+    } catch (err) {
+      console.error('Gagal menyalin domain:', err);
+    }
+  };
 
   // Generate current JSON string on load/change
   useEffect(() => {
@@ -365,20 +376,89 @@ export default function SyncPanel({ supplyItems, distributionItems, onImportData
                   </p>
                 </div>
 
-                {/* Status indicator during login */}
-                {syncStatus !== 'idle' && (
-                  <div className={`w-full max-w-xs p-3 rounded-xl border flex items-start space-x-2 text-xs text-left ${
-                    syncStatus === 'loading' ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                    syncStatus === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                    'bg-red-50 border-red-100 text-red-700'
-                  }`}>
-                    {syncStatus === 'loading' ? (
-                      <RefreshCw className="w-4 h-4 animate-spin shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    )}
-                    <span className="break-words flex-1">{syncMessage}</span>
+                {/* Status indicator during login or specific error guide for unauthorized-domain */}
+                {syncStatus === 'error' && syncMessage.toLowerCase().includes('unauthorized-domain') ? (
+                  <div className="w-full max-w-sm bg-red-50/75 border border-red-200 rounded-xl p-4 text-left text-xs space-y-3 shadow-xs">
+                    <div className="flex items-center space-x-2 text-red-800 font-semibold">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                      <span>Domain Belum Diizinkan (Unauthorized Domain)</span>
+                    </div>
+                    
+                    <p className="text-slate-600 leading-relaxed">
+                      Project Firebase Anda (<code className="bg-white px-1.5 py-0.5 rounded border text-red-600 font-mono font-bold">lofty-throne-x8gvj</code>) memblokir koneksi dari alamat ini karena domain belum masuk ke daftar izin Firebase Auth.
+                    </p>
+
+                    <div className="space-y-2">
+                      <p className="font-semibold text-slate-700">Cara Mengatasinya:</p>
+                      
+                      <ol className="list-decimal list-inside space-y-2 text-slate-600 bg-white/60 p-2.5 rounded-lg border border-red-100/50">
+                        <li>
+                          Buka tab baru dan masuk ke <strong>Firebase Console</strong> pada tautan di bawah ini.
+                        </li>
+                        <li className="mt-1">
+                          Masuk ke menu <strong>Authentication</strong> &rarr; Pilih tab <strong>Settings</strong> di atas &rarr; Klik <strong>Authorized domains</strong>.
+                        </li>
+                        <li className="mt-1">
+                          Klik <strong>Add domain</strong> dan tambahkan kedua alamat berikut:
+                        </li>
+                      </ol>
+
+                      <div className="space-y-1.5 mt-2">
+                        {[
+                          'ais-dev-55ajnqjlzioudkywxhiyuj-85817899694.asia-east1.run.app',
+                          'ais-pre-55ajnqjlzioudkywxhiyuj-85817899694.asia-east1.run.app'
+                        ].map((domain) => (
+                          <div key={domain} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-slate-700">
+                            <span className="truncate flex-1 mr-2">{domain}</span>
+                            <button
+                              onClick={() => handleCopyDomain(domain)}
+                              className="p-1 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded transition shrink-0 cursor-pointer"
+                              title="Salin Domain"
+                            >
+                              {copiedDomain === domain ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                      <a
+                        href="https://console.firebase.google.com/project/lofty-throne-x8gvj/authentication/settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition text-center flex-1 shadow-xs cursor-pointer"
+                      >
+                        <span>Buka Firebase Console</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                      <button
+                        onClick={handleGoogleSignIn}
+                        className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-lg transition flex-1 cursor-pointer"
+                      >
+                        <span>Coba Masuk Lagi</span>
+                      </button>
+                    </div>
                   </div>
+                ) : (
+                  syncStatus !== 'idle' && (
+                    <div className={`w-full max-w-xs p-3 rounded-xl border flex items-start space-x-2 text-xs text-left ${
+                      syncStatus === 'loading' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                      syncStatus === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                      'bg-red-50 border-red-100 text-red-700'
+                    }`}>
+                      {syncStatus === 'loading' ? (
+                        <RefreshCw className="w-4 h-4 animate-spin shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      )}
+                      <span className="break-words flex-1">{syncMessage}</span>
+                    </div>
+                  )
                 )}
                 
                 <button
