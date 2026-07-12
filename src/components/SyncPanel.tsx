@@ -364,10 +364,27 @@ export default function SyncPanel({ supplyItems, distributionItems, onImportData
                     Masuk dengan akun Google Anda untuk menyimpan data supply dan distribusi langsung ke spreadsheet Anda.
                   </p>
                 </div>
+
+                {/* Status indicator during login */}
+                {syncStatus !== 'idle' && (
+                  <div className={`w-full max-w-xs p-3 rounded-xl border flex items-start space-x-2 text-xs text-left ${
+                    syncStatus === 'loading' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                    syncStatus === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                    'bg-red-50 border-red-100 text-red-700'
+                  }`}>
+                    {syncStatus === 'loading' ? (
+                      <RefreshCw className="w-4 h-4 animate-spin shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    )}
+                    <span className="break-words flex-1">{syncMessage}</span>
+                  </div>
+                )}
                 
                 <button
                   onClick={handleGoogleSignIn}
-                  className="gsi-material-button inline-flex items-center justify-center space-x-3 px-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-xs hover:bg-slate-50 active:scale-98 transition text-sm text-slate-700 font-medium"
+                  disabled={syncStatus === 'loading'}
+                  className="gsi-material-button inline-flex items-center justify-center space-x-3 px-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-xs hover:bg-slate-50 active:scale-98 disabled:opacity-50 transition text-sm text-slate-700 font-medium cursor-pointer"
                 >
                   <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5 shrink-0">
                     <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
@@ -375,8 +392,21 @@ export default function SyncPanel({ supplyItems, distributionItems, onImportData
                     <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
                     <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
                   </svg>
-                  <span>Sign in with Google</span>
+                  <span>{syncStatus === 'loading' ? 'Menghubungkan...' : 'Sign in with Google'}</span>
                 </button>
+
+                {/* Info Box about Iframe restrictions */}
+                <div className="bg-amber-50/70 border border-amber-100 rounded-xl p-3 text-left max-w-xs space-y-1">
+                  <div className="flex items-center space-x-1.5 text-amber-800 font-semibold text-[11px]">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                    <span>Masalah Koneksi Google?</span>
+                  </div>
+                  <p className="text-[10px] text-amber-700 leading-relaxed">
+                    Karena aplikasi ini sedang dibuka di dalam iframe pratinjau AI Studio, browser dapat memblokir popup masuk Google. 
+                    <br />
+                    <strong className="text-amber-800">Silakan klik ikon "Open in new tab" (panah miring ke atas) di kanan atas jendela pratinjau</strong> untuk membukanya secara penuh di tab browser baru, lalu hubungkan akun Anda di sana!
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
